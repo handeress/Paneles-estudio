@@ -5,7 +5,7 @@ fondo hacia el salón (0 = cara del muro), Z vertical (0 = piso terminado).
 
 Supuestos (editar abajo y volver a correr):
 - Nicho 2500 x 2420, fondo 400. Panel listones 32 mm.
-- Junta horizontal a 1500 mm. TV 55" fijo arriba. 2 hojas abajo.
+- Junta horizontal a 1500 mm. TV 65" fijo arriba, a ras de las puertas. 2 hojas abajo con pivotes.
 - Colchones 1.90 x 1.40 y 1.90 x 1.10, de canto; grosor 150 mm c/u (SUPUESTO).
 """
 import time, uuid, string
@@ -18,7 +18,8 @@ TUBO = 25             # bastidor hojas, tubo 1"x1"
 JUNTA = 1500          # altura junta fija / puertas
 LISTON, LUZ = 30, 15  # listón 30 mm, separación 15 mm
 GROSOR_COLCHON = 150  # SUPUESTO
-TV = (1230, 710, 25)  # 55" ancho, alto, grosor
+TV = (1450, 836, 30)  # 65" ancho, alto, grosor
+LUZ_TV = 15            # TV a ras de puertas, 15 mm sobre la junta
 
 Y_PANEL = FONDO - PANEL            # 368
 Y_TRIP = Y_PANEL - TRIPLEX         # 353
@@ -78,7 +79,7 @@ COL = {
     "muro": ((0.92, 0.92, 0.90), 0.6), "liston": ((0.62, 0.38, 0.20), 0),
     "triplex": ((0.85, 0.72, 0.50), 0), "madera": ((0.75, 0.60, 0.40), 0),
     "metal": ((0.25, 0.25, 0.27), 0), "tv": ((0.05, 0.05, 0.05), 0),
-    "colchon": ((0.55, 0.70, 0.90), 0.3), "herraje": ((0.70, 0.70, 0.72), 0),
+    "colchon": ((0.55, 0.70, 0.90), 0.0), "herraje": ((0.70, 0.70, 0.72), 0),
 }
 
 materiales = {}
@@ -125,7 +126,7 @@ caja("Dintel junta", "IFCBEAM", 0, Y_TRIP - 70, JUNTA, ANCHO, 70, 45, "madera", 
 for nm, x in [("Parante alto izq", 0), ("Parante alto centro", ANCHO / 2 - B / 2), ("Parante alto der", ANCHO - B)]:
     caja(nm, "IFCMEMBER", x, yb, JUNTA + 45, B, B, ALTO - JUNTA - 45, "madera", "Madera 2x2", "Bastidor fijo")
 caja("Travesano alto techo", "IFCMEMBER", B, yb, ALTO - B, ANCHO - 2 * B, B, B, "madera", "Madera 2x2", "Bastidor fijo")
-caja("Travesano alto medio", "IFCMEMBER", B, yb, 1960 - B / 2, ANCHO - 2 * B, B, B, "madera", "Madera 2x2", "Bastidor fijo")
+caja("Travesano alto medio", "IFCMEMBER", B, yb, 2100 - B / 2, ANCHO - 2 * B, B, B, "madera", "Madera 2x2", "Bastidor fijo")
 caja("Forro triplex zona alta", "IFCPLATE", 0, Y_TRIP, JUNTA, ANCHO, TRIPLEX, ALTO - JUNTA, "triplex", "Triplex 15 mm")
 
 def listones(prefijo, x0, ancho, z0, alto):
@@ -142,15 +143,16 @@ def listones(prefijo, x0, ancho, z0, alto):
 n_alto = listones("Alto", 0, ANCHO, JUNTA, ALTO - JUNTA)
 
 # ---------------- soporte TV anclado al muro ----------------
-z_tv = 1960
+z_tv = JUNTA + LUZ_TV + TV[1] / 2
 for nm, x in [("Separador TV izq", 1080), ("Separador TV der", 1380)]:
     caja(f"Platina muro {nm[-3:]}", "IFCPLATE", x - 55, 0, z_tv - 75, 150, 6, 150, "metal", "Platina acero 6 mm")
     caja(nm, "IFCMEMBER", x, 6, z_tv - 20, 40, FONDO - 6, 40, "metal", "Tubo 40x40 cal 16", "Separador TV")
 caja("Soporte TV fijo", "IFCPLATE", (ANCHO - 500) / 2, FONDO, z_tv - 200, 500, 20, 400, "metal", "Soporte TV fijo")
-caja('TV 55"', "IFCELECTRICAPPLIANCE", (ANCHO - TV[0]) / 2, FONDO + 20, z_tv - TV[1] / 2, TV[0], TV[2], TV[1], "tv", "TV")
+caja('TV 65"', "IFCELECTRICAPPLIANCE", (ANCHO - TV[0]) / 2, FONDO + 20, z_tv - TV[1] / 2, TV[0], TV[2], TV[1], "tv", "TV")
 
 # ---------------- hojas zona baja ----------------
 G, Z0 = 3, 20
+PIVOTE = 35  # eje del pivote desde el canto exterior
 z_top = JUNTA - G
 alto_h = z_top - Z0
 hojas = [("H1", G, ANCHO / 2 - 2), ("H2", ANCHO / 2 + 2, ANCHO / 2 - 2 - G)]
@@ -162,10 +164,11 @@ for h, x0, w in hojas:
         caja(f"{h} tubo horizontal {nm}", "IFCMEMBER", x0 + TUBO, Y_TUBO, z, w - 2 * TUBO, TUBO, TUBO, "metal", 'Tubo 1"x1" cal 18', "Bastidor hoja")
     caja(f"{h} forro triplex", "IFCPLATE", x0, Y_TRIP, Z0, w, TRIPLEX, alto_h, "triplex", "Triplex 15 mm")
     n_bajo += listones(f"{h}", x0, w, Z0, alto_h)
-    # bisagras/pivotes del lado exterior
-    xb = x0 if h == "H1" else x0 + w - 40
-    for i, z in enumerate([Z0 + 100, Z0 + alto_h / 3, Z0 + 2 * alto_h / 3, z_top - 160]):
-        caja(f"{h} bisagra {i+1}", "IFCMECHANICALFASTENER", xb, Y_TUBO - 20, z, 40, 20, 60, "herraje", "Bisagra cazoleta pesada")
+    # pivotes piso-dintel del lado exterior (eje a 35 mm del canto): la carga baja al piso
+    xp = (x0 + PIVOTE if h == "H1" else x0 + w - PIVOTE) - 25
+    yp = Y_TUBO + (FONDO - Y_TUBO) / 2 - 25
+    caja(f"{h} pivote inferior", "IFCMECHANICALFASTENER", xp, yp, 15, 50, 50, Z0 - 15, "herraje", "Pivote puerta 80 kg")
+    caja(f"{h} pivote superior", "IFCMECHANICALFASTENER", xp, yp, z_top, 50, 50, JUNTA + 45 - z_top, "herraje", "Pivote puerta 80 kg")
 
 # ---------------- colchones (referencia de capacidad) ----------------
 caja("Colchon 1.90 x 1.40 (de canto)", "IFCFURNITURE", (ANCHO - 1900) / 2, 15, 15, 1900, GROSOR_COLCHON, 1400, "colchon", "Colchon")
