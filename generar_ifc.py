@@ -5,7 +5,7 @@ fondo hacia el salón (0 = cara del muro), Z vertical (0 = piso terminado).
 
 Supuestos (editar abajo y volver a correr):
 - Nicho 2500 x 2420, fondo 400. Panel listones 32 mm.
-- Junta horizontal a 1500 mm. TV 65" fijo arriba, a ras de las puertas. 2 hojas abajo con pivotes.
+- Junta horizontal a 1500 mm. TV 65" fijo arriba, a ras de las puertas, colgado de un marco metalico anclado al techo y al dintel. 2 hojas abajo con pivotes.
 - Colchones 1.90 x 1.40 y 1.90 x 1.10, de canto; grosor 150 mm c/u (SUPUESTO).
 """
 import time, uuid, string
@@ -19,7 +19,9 @@ JUNTA = 1500          # altura junta fija / puertas
 LISTON, LUZ = 30, 15  # listón 30 mm, separación 15 mm
 GROSOR_COLCHON = 150  # SUPUESTO
 TV = (1450, 836, 30)  # 65" ancho, alto, grosor
-LUZ_TV = 15            # TV a ras de puertas, 15 mm sobre la junta
+LUZ_TV = 15
+SEP_COLG = 600         # entre ejes de los colgantes del TV
+VESA = 400             # patron VESA del TV (filas de anclaje)            # TV a ras de puertas, 15 mm sobre la junta
 
 Y_PANEL = FONDO - PANEL            # 368
 Y_TRIP = Y_PANEL - TRIPLEX         # 353
@@ -123,10 +125,9 @@ caja("Base piso closet", "IFCSLAB", 0, 0, 0, ANCHO, Y_TUBO, 15, "triplex", "Trip
 B = 45  # madera 2"x2" cepillada
 yb = Y_TRIP - B
 caja("Dintel junta", "IFCBEAM", 0, Y_TRIP - 70, JUNTA, ANCHO, 70, 45, "madera", "Madera 2x3", "Dintel 2x3")
-for nm, x in [("Parante alto izq", 0), ("Parante alto centro", ANCHO / 2 - B / 2), ("Parante alto der", ANCHO - B)]:
+for nm, x in [("Parante alto izq", 0), ("Parante alto der", ANCHO - B)]:
     caja(nm, "IFCMEMBER", x, yb, JUNTA + 45, B, B, ALTO - JUNTA - 45, "madera", "Madera 2x2", "Bastidor fijo")
 caja("Travesano alto techo", "IFCMEMBER", B, yb, ALTO - B, ANCHO - 2 * B, B, B, "madera", "Madera 2x2", "Bastidor fijo")
-caja("Travesano alto medio", "IFCMEMBER", B, yb, 2100 - B / 2, ANCHO - 2 * B, B, B, "madera", "Madera 2x2", "Bastidor fijo")
 caja("Forro triplex zona alta", "IFCPLATE", 0, Y_TRIP, JUNTA, ANCHO, TRIPLEX, ALTO - JUNTA, "triplex", "Triplex 15 mm")
 
 def listones(prefijo, x0, ancho, z0, alto):
@@ -142,11 +143,19 @@ def listones(prefijo, x0, ancho, z0, alto):
 
 n_alto = listones("Alto", 0, ANCHO, JUNTA, ALTO - JUNTA)
 
-# ---------------- soporte TV anclado al muro ----------------
+# ---------------- marco colgante del TV (anclado al techo, no al muro de fondo) ----------------
+# 2 verticales 40x40 cal 16 desde platina de techo hasta el dintel, 2 horizontales en las filas VESA.
 z_tv = JUNTA + LUZ_TV + TV[1] / 2
-for nm, x in [("Separador TV izq", 1080), ("Separador TV der", 1380)]:
-    caja(f"Platina muro {nm[-3:]}", "IFCPLATE", x - 55, 0, z_tv - 75, 150, 6, 150, "metal", "Platina acero 6 mm")
-    caja(nm, "IFCMEMBER", x, 6, z_tv - 20, 40, FONDO - 6, 40, "metal", "Tubo 40x40 cal 16", "Separador TV")
+T, PL = 40, 6
+y_m = Y_TRIP - T                       # pegado detras del triplex
+z_base = JUNTA + 45                    # cara superior del dintel
+xs = [ANCHO / 2 - SEP_COLG / 2 - T / 2, ANCHO / 2 + SEP_COLG / 2 - T / 2]
+for lado, x in zip(["izq", "der"], xs):
+    caja(f"Platina techo {lado}", "IFCPLATE", x + T / 2 - 75, y_m + T / 2 - 75, ALTO - PL, 150, 150, PL, "metal", "Platina acero 6 mm")
+    caja(f"Colgante TV {lado}", "IFCMEMBER", x, y_m, z_base, T, T, ALTO - PL - z_base, "metal", "Tubo 40x40 cal 16", "Colgante TV")
+    caja(f"Angulo base colgante {lado}", "IFCPLATE", x - 30, y_m - 30, z_base, 100, 30, 50, "metal", "Angulo 1 1/2 x 1/8", "Anclaje a dintel")
+for fila, z in [("inferior", z_tv - VESA / 2), ("superior", z_tv + VESA / 2)]:
+    caja(f"Travesano TV {fila}", "IFCMEMBER", xs[0] + T, y_m, z - T / 2, SEP_COLG - T, T, T, "metal", "Tubo 40x40 cal 16", "Travesano TV")
 caja("Soporte TV fijo", "IFCPLATE", (ANCHO - 500) / 2, FONDO, z_tv - 200, 500, 20, 400, "metal", "Soporte TV fijo")
 caja('TV 65"', "IFCELECTRICAPPLIANCE", (ANCHO - TV[0]) / 2, FONDO + 20, z_tv - TV[1] / 2, TV[0], TV[2], TV[1], "tv", "TV")
 
