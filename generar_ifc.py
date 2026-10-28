@@ -6,7 +6,7 @@ fondo hacia el salón (0 = cara del muro), Z vertical (0 = piso terminado).
 Supuestos (editar abajo y volver a correr):
 - Nicho 2500 x 2420, fondo 400. Panel listones 32 mm.
 - Junta horizontal a 1500 mm. TV 65" fijo arriba, a ras de las puertas, colgado de un marco metalico anclado al techo y al dintel. 2 hojas abajo con pivotes.
-- Colchones 1.90 x 1.40 y 1.90 x 1.10, de canto; grosor 150 mm c/u (SUPUESTO).
+- Un colchon 1.40 x 1.90 vertical, alineado a la izquierda; grosor 150 mm (SUPUESTO).
 """
 import time, uuid, string
 
@@ -180,8 +180,8 @@ for h, x0, w in hojas:
     caja(f"{h} pivote superior", "IFCMECHANICALFASTENER", xp, yp, z_top, 50, 50, JUNTA + 45 - z_top, "herraje", "Pivote puerta 80 kg")
 
 # ---------------- colchones (referencia de capacidad) ----------------
-caja("Colchon 1.90 x 1.40 (de canto)", "IFCFURNITURE", (ANCHO - 1900) / 2, 15, 15, 1900, GROSOR_COLCHON, 1400, "colchon", "Colchon")
-caja("Colchon 1.90 x 1.10 (de canto)", "IFCFURNITURE", (ANCHO - 1900) / 2, 15 + GROSOR_COLCHON + 5, 15, 1900, GROSOR_COLCHON, 1100, "colchon", "Colchon")
+# un solo colchon, vertical (1.90 de alto), de canto contra el muro de fondo, alineado a la izquierda
+caja("Colchon 1.40 x 1.90 (vertical)", "IFCFURNITURE", 0, 15, 15, 1400, GROSOR_COLCHON, 1900, "colchon", "Colchon")
 
 # ---------------- relaciones ----------------
 E(f"IFCRELCONTAINEDINSPATIALSTRUCTURE('{gid()}',{own},$,$,({','.join(elements)}),{storey})")
